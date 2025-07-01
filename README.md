@@ -60,3 +60,8 @@ The game is a single HTML file containing all the necessary CSS for styling and 
 6. You **cannot** choose the color your opponent currently has, or the color you already have.
 7. The game ends when all the squares are filled. The player with the most squares wins.
 8. Click **"Play Again"** on the game-over screen to start a new match.
+
+---
+
+## AI
+AI was used to assist throught all phases of the project
