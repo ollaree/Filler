@@ -370,6 +370,7 @@
 
             // Create the color picker buttons
             function createColorPickers() {
+                pickersElement.innerHTML = ''; // Clear previous buttons
                 COLORS.forEach(color => {
                     const button = document.createElement('button');
                     button.classList.add('color-btn');
@@ -427,7 +428,8 @@
                         const newY = y + dy;
                         if (newX >= 0 && newX < GRID_SIZE && newY >= 0 && newY < GRID_SIZE) {
                             const neighbor = grid[newY][newX];
-                            if (neighbor.owner !== currentPlayer && neighbor.color === newColor) {
+                            // *** FIX: Only capture neutral (owner: 0) cells ***
+                            if (neighbor.owner === 0 && neighbor.color === newColor) {
                                 cellsToProcess.push({ x: newX, y: newY });
                             }
                         }
@@ -522,9 +524,9 @@
             });
             
             restartBtn.addEventListener('click', () => {
-                // Re-initialize the game with the same grid size settings
+                // Re-show the initial modal to allow changing difficulty
                 gameOverModal.classList.add('hidden');
-                init();
+                modal.classList.remove('hidden');
             });
 
             // --- INITIAL SETUP ---
