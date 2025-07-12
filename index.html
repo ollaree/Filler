@@ -18,10 +18,10 @@
             overflow: hidden; /* Prevents scrollbars */
         }
 
-        /* Main container for the game - now fills the screen */
+        /* Main container for the game */
         #game-container {
-            width: 100vw; /* Fills the full viewport width */
-            height: 100vh; /* Fills the full viewport height */
+            width: 100vw;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             background-color: #0d0d0d;
@@ -35,11 +35,12 @@
             font-size: 16px;
             border-bottom: 1px solid #444;
             background-color: #252525;
-            flex-shrink: 0; /* Prevents the status bar from shrinking */
+            flex-shrink: 0;
         }
 
         .score {
             width: 100px;
+            transition: color 0.3s ease;
         }
         
         #p2-score {
@@ -66,24 +67,48 @@
         /* The game board grid */
         #game-board {
             display: grid;
-            /* The grid size is set by JS */
             width: 100%;
             flex-grow: 1;
-            border-bottom: 1px solid #444;
+            position: relative; 
         }
 
-        /* Individual cells in the grid - no borders or shadows for a seamless look */
+        /* Highlight for starting corners */
+        .corner-highlight {
+            position: absolute;
+            width: 2%;
+            height: 2%;
+            background-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+        }
+
+        #p1-start-highlight {
+            bottom: 5px;
+            left: 5px;
+        }
+
+        #p2-start-highlight {
+            top: 5px;
+            right: 5px;
+        }
+
+        /* Individual cells in the grid */
         .cell {
-            /* No borders or shadows */
+            /* No borders or shadows for a seamless look */
         }
 
-        /* Color picker area */
-        #color-pickers {
+        /* Default color picker area (for desktop) */
+        #color-pickers-desktop {
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 15px 0;
-            flex-shrink: 0; /* Prevents the picker from shrinking */
+            flex-shrink: 0;
+        }
+        
+        /* Containers for mobile landscape color pickers */
+        #p1-color-picker-mobile, #p2-color-picker-mobile {
+            display: none; /* Hidden by default */
         }
 
         /* Color choice buttons */
@@ -105,6 +130,61 @@
             cursor: not-allowed;
             filter: brightness(0.4);
         }
+        
+        /* --- Mobile Landscape Specific Styles --- */
+        @media (orientation: landscape) and (max-height: 500px) {
+            #game-container {
+                flex-direction: row;
+                align-items: stretch;
+            }
+
+            #status-bar {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                z-index: 10;
+                border-bottom: 1px solid #444;
+            }
+
+            #game-board-container {
+                flex-grow: 1;
+                display: flex;
+                padding-top: 45px; /* Space for status bar */
+            }
+            
+            #game-board {
+                flex-grow: 1;
+            }
+
+            #color-pickers-desktop {
+                display: none; /* Hide the bottom picker */
+            }
+
+            #p1-color-picker-mobile, #p2-color-picker-mobile {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding: 10px;
+                background-color: #252525;
+                height: 100%;
+                box-sizing: border-box;
+            }
+
+            .color-btn {
+                width: 40px;
+                height: 30px;
+                margin: 5px 0;
+            }
+
+            .grayed-out {
+                filter: grayscale(80%) brightness(0.6);
+                pointer-events: none;
+            }
+        }
+
 
         /* Modal styles */
         .modal-overlay {
@@ -195,7 +275,7 @@
             width: 100%;
             height: 10px;
             cursor: pointer;
-            background: var(--slider-color, #3498db); /* Default calm color */
+            background: var(--slider-color, #3498db);
             border-radius: 5px;
             transition: background 0.3s ease;
         }
@@ -218,7 +298,7 @@
             border-radius: 50%;
             background: #f0f0f0;
             cursor: pointer;
-            margin-top: -7px; /* Center thumb on track */
+            margin-top: -7px;
         }
 
         input[type=range]::-moz-range-thumb {
@@ -234,7 +314,6 @@
 </head>
 <body>
 
-    <!-- Initial instructions modal -->
     <div id="modal" class="modal-overlay">
         <div class="modal-content">
             <h1>FILLER</h1>
@@ -250,7 +329,6 @@
         </div>
     </div>
     
-    <!-- Game over modal -->
     <div id="game-over-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <h1 id="winner-text"></h1>
@@ -259,25 +337,32 @@
         </div>
     </div>
 
-    <!-- Main game structure -->
     <div id="game-container">
         <div id="status-bar">
             <div id="p1-score" class="score"></div>
             <div id="turn-indicator"></div>
             <div id="p2-score" class="score"></div>
         </div>
-        <div id="game-board"></div>
-        <div id="color-pickers"></div>
+
+        <div id="p1-color-picker-mobile"></div>
+        
+        <div id="game-board-container">
+            <div id="game-board">
+                 <div id="p1-start-highlight" class="corner-highlight hidden"></div>
+                 <div id="p2-start-highlight" class="corner-highlight hidden"></div>
+            </div>
+        </div>
+
+        <div id="p2-color-picker-mobile"></div>
+        
+        <div id="color-pickers-desktop"></div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- CONFIGURATION ---
-            const COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22']; // Red, Blue, Green, Yellow, Purple, Orange
+            const COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22'];
 
-            // --- DOM ELEMENTS ---
             const boardElement = document.getElementById('game-board');
-            const pickersElement = document.getElementById('color-pickers');
             const p1ScoreElement = document.getElementById('p1-score');
             const p2ScoreElement = document.getElementById('p2-score');
             const turnIndicatorElement = document.getElementById('turn-indicator');
@@ -290,17 +375,22 @@
             const densitySlider = document.getElementById('density-slider');
             const difficultyLabel = document.getElementById('difficulty-label');
 
-            // --- GAME STATE (mutable) ---
+            // New DOM elements
+            const desktopPickers = document.getElementById('color-pickers-desktop');
+            const p1MobilePickers = document.getElementById('p1-color-picker-mobile');
+            const p2MobilePickers = document.getElementById('p2-color-picker-mobile');
+            const p1StartHighlight = document.getElementById('p1-start-highlight');
+            const p2StartHighlight = document.getElementById('p2-start-highlight');
+
             let GRID_SIZE;
             let TOTAL_CELLS;
-            let grid = []; // 2D array for cell state { color, owner }
+            let grid = [];
             let currentPlayer = 1;
             let playerState = {
                 1: { color: null, score: 0 },
                 2: { color: null, score: 0 }
             };
             
-            // --- MAPPINGS for slider ---
             const difficultySettings = {
                 1: { name: 'Easy', size: 20, color: '#3498db' },
                 2: { name: 'Medium', size: 30, color: '#2ecc71' },
@@ -308,19 +398,20 @@
                 4: { name: 'Pixelpocalypse', size: 60, color: '#e74c3c' }
             };
 
-            // --- INITIALIZATION ---
             function init() {
-                // Reset state
                 grid = [];
                 currentPlayer = 1;
                 playerState = { 1: { color: null, score: 0 }, 2: { color: null, score: 0 }};
                 
-                // Clear old elements
-                boardElement.innerHTML = '';
-                pickersElement.innerHTML = '';
+                boardElement.innerHTML = ''; // Clear board but keep highlights
+                boardElement.appendChild(p1StartHighlight);
+                boardElement.appendChild(p2StartHighlight);
+
+                desktopPickers.innerHTML = '';
+                p1MobilePickers.innerHTML = '';
+                p2MobilePickers.innerHTML = '';
                 gameOverModal.classList.add('hidden');
 
-                // Setup grid style based on the selected size
                 boardElement.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
                 boardElement.style.gridTemplateRows = `repeat(${GRID_SIZE}, 1fr)`;
                 
@@ -329,9 +420,11 @@
                 
                 renderBoard();
                 updateStatus();
+                
+                p1StartHighlight.classList.remove('hidden');
+                p2StartHighlight.classList.remove('hidden');
             }
 
-            // Create the backend data structure for the grid
             function createGridData() {
                 for (let y = 0; y < GRID_SIZE; y++) {
                     const row = [];
@@ -341,14 +434,13 @@
                         boardElement.appendChild(cell);
                         row.push({
                             color: COLORS[Math.floor(Math.random() * COLORS.length)],
-                            owner: 0, // 0 for neutral, 1 for P1, 2 for P2
+                            owner: 0,
                             element: cell
                         });
                     }
                     grid.push(row);
                 }
 
-                // Set starting positions and colors
                 const p1_start_y = GRID_SIZE - 1;
                 const p1_start_x = 0;
                 playerState[1].color = grid[p1_start_y][p1_start_x].color;
@@ -358,7 +450,6 @@
                 const p2_start_x = GRID_SIZE - 1;
                 playerState[2].color = grid[p2_start_y][p2_start_x].color;
                 
-                // Ensure starting colors are different
                 while (playerState[1].color === playerState[2].color) {
                     grid[p2_start_y][p2_start_x].color = COLORS[Math.floor(Math.random() * COLORS.length)];
                     playerState[2].color = grid[p2_start_y][p2_start_x].color;
@@ -368,20 +459,20 @@
                 updateScores();
             }
 
-            // Create the color picker buttons
             function createColorPickers() {
-                pickersElement.innerHTML = ''; // Clear previous buttons
-                COLORS.forEach(color => {
-                    const button = document.createElement('button');
-                    button.classList.add('color-btn');
-                    button.style.backgroundColor = color;
-                    button.dataset.color = color;
-                    button.addEventListener('click', handleColorChoice);
-                    pickersElement.appendChild(button);
+                [desktopPickers, p1MobilePickers, p2MobilePickers].forEach(pickerContainer => {
+                    pickerContainer.innerHTML = '';
+                    COLORS.forEach(color => {
+                        const button = document.createElement('button');
+                        button.classList.add('color-btn');
+                        button.style.backgroundColor = color;
+                        button.dataset.color = color;
+                        button.addEventListener('click', handleColorChoice);
+                        pickerContainer.appendChild(button);
+                    });
                 });
             }
 
-            // --- GAME LOGIC ---
             function handleColorChoice(event) {
                 const chosenColor = event.target.dataset.color;
                 const opponentPlayer = currentPlayer === 1 ? 2 : 1;
@@ -428,7 +519,6 @@
                         const newY = y + dy;
                         if (newX >= 0 && newX < GRID_SIZE && newY >= 0 && newY < GRID_SIZE) {
                             const neighbor = grid[newY][newX];
-                            // *** FIX: Only capture neutral (owner: 0) cells ***
                             if (neighbor.owner === 0 && neighbor.color === newColor) {
                                 cellsToProcess.push({ x: newX, y: newY });
                             }
@@ -457,9 +547,11 @@
                 winnerText.textContent = winnerMessage;
                 finalScoreText.textContent = `Final Score: ${playerState[1].score} to ${playerState[2].score}`;
                 gameOverModal.classList.remove('hidden');
+                
+                p1StartHighlight.classList.add('hidden');
+                p2StartHighlight.classList.add('hidden');
             }
 
-            // --- UI UPDATES ---
             function renderBoard() {
                 for (let y = 0; y < GRID_SIZE; y++) {
                     for (let x = 0; x < GRID_SIZE; x++) {
@@ -492,6 +584,9 @@
             function updateStatus() {
                 p1ScoreElement.textContent = `P1: ${playerState[1].score}`;
                 p2ScoreElement.textContent = `P2: ${playerState[2].score}`;
+                p1ScoreElement.style.color = playerState[1].color;
+                p2ScoreElement.style.color = playerState[2].color;
+                
                 turnIndicatorElement.textContent = `P${currentPlayer}'s Turn`;
                 turnIndicatorElement.classList.toggle('active-turn', currentPlayer === 1);
 
@@ -502,6 +597,15 @@
                 document.querySelectorAll('.color-btn').forEach(btn => {
                     btn.disabled = (btn.dataset.color === currentPlayerColor || btn.dataset.color === opponentPlayerColor);
                 });
+
+                // Gray out inactive player's picker on mobile
+                if (currentPlayer === 1) {
+                    p1MobilePickers.classList.remove('grayed-out');
+                    p2MobilePickers.classList.add('grayed-out');
+                } else {
+                    p1MobilePickers.classList.add('grayed-out');
+                    p2MobilePickers.classList.remove('grayed-out');
+                }
             }
             
             function updateSliderUI() {
@@ -511,7 +615,6 @@
                 densitySlider.style.setProperty('--slider-color', settings.color);
             }
 
-            // --- EVENT LISTENERS ---
             densitySlider.addEventListener('input', updateSliderUI);
 
             startBtn.addEventListener('click', () => {
@@ -524,12 +627,10 @@
             });
             
             restartBtn.addEventListener('click', () => {
-                // Re-show the initial modal to allow changing difficulty
                 gameOverModal.classList.add('hidden');
                 modal.classList.remove('hidden');
             });
 
-            // --- INITIAL SETUP ---
             updateSliderUI();
         });
     </script>
