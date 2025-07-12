@@ -18,13 +18,21 @@
             overflow: hidden; /* Prevents scrollbars */
         }
 
-        /* Main container for the game */
+        /* Main container for the game - now fills the screen */
         #game-container {
-            width: 100vw;
-            height: 100vh;
+            width: 100vw; /* Fills the full viewport width */
+            height: 100vh; /* Fills the full viewport height */
             display: flex;
             flex-direction: column;
             background-color: #0d0d0d;
+        }
+        
+        /* This new container helps manage the mobile landscape layout */
+        #main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Important for flex-grow in a flex column */
         }
 
         /* Status bar for scores and turn info */
@@ -35,12 +43,12 @@
             font-size: 16px;
             border-bottom: 1px solid #444;
             background-color: #252525;
-            flex-shrink: 0;
+            flex-shrink: 0; /* Prevents the status bar from shrinking */
         }
 
         .score {
             width: 100px;
-            transition: color 0.3s ease;
+            transition: color 0.3s ease; /* Added for smooth color change */
         }
         
         #p2-score {
@@ -69,32 +77,11 @@
             display: grid;
             width: 100%;
             flex-grow: 1;
-            position: relative; 
         }
 
-        /* Highlight for starting corners */
-        .corner-highlight {
-            position: absolute;
-            width: 2%;
-            height: 2%;
-            background-color: rgba(255, 255, 255, 0.3);
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
-        }
-
-        #p1-start-highlight {
-            bottom: 5px;
-            left: 5px;
-        }
-
-        #p2-start-highlight {
-            top: 5px;
-            right: 5px;
-        }
-
-        /* Individual cells in the grid */
+        /* Individual cells in the grid - no borders or shadows for a seamless look */
         .cell {
-            /* No borders or shadows for a seamless look */
+            /* No borders */
         }
 
         /* Default color picker area (for desktop) */
@@ -106,10 +93,11 @@
             flex-shrink: 0;
         }
         
-        /* Containers for mobile landscape color pickers */
+        /* Mobile-specific picker containers are hidden by default */
         #p1-color-picker-mobile, #p2-color-picker-mobile {
-            display: none; /* Hidden by default */
+            display: none;
         }
+
 
         /* Color choice buttons */
         .color-btn {
@@ -130,40 +118,29 @@
             cursor: not-allowed;
             filter: brightness(0.4);
         }
-        
+
         /* --- Mobile Landscape Specific Styles --- */
+        /* This media query targets phones in landscape mode */
         @media (orientation: landscape) and (max-height: 500px) {
-            #game-container {
-                flex-direction: row;
-                align-items: stretch;
+            #main-content {
+                flex-direction: row; /* Change main layout to horizontal */
+                padding-top: 45px;  /* Add space for the absolute status bar */
             }
 
             #status-bar {
-                position: absolute;
+                position: absolute; /* Move status bar to the top */
                 top: 0;
                 left: 0;
-                right: 0;
                 width: 100%;
                 z-index: 10;
-                border-bottom: 1px solid #444;
-            }
-
-            #game-board-container {
-                flex-grow: 1;
-                display: flex;
-                padding-top: 45px; /* Space for status bar */
-            }
-            
-            #game-board {
-                flex-grow: 1;
             }
 
             #color-pickers-desktop {
-                display: none; /* Hide the bottom picker */
+                display: none; /* Hide the bottom desktop picker */
             }
 
             #p1-color-picker-mobile, #p2-color-picker-mobile {
-                display: flex;
+                display: flex; /* Show the side pickers */
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
@@ -173,12 +150,15 @@
                 box-sizing: border-box;
             }
 
-            .color-btn {
+            /* Adjust mobile color buttons */
+            #p1-color-picker-mobile .color-btn,
+            #p2-color-picker-mobile .color-btn {
                 width: 40px;
                 height: 30px;
                 margin: 5px 0;
             }
-
+            
+            /* Class to visually disable the inactive player's picker */
             .grayed-out {
                 filter: grayscale(80%) brightness(0.6);
                 pointer-events: none;
@@ -298,7 +278,7 @@
             border-radius: 50%;
             background: #f0f0f0;
             cursor: pointer;
-            margin-top: -7px;
+            margin-top: -7px; /* Center thumb on track */
         }
 
         input[type=range]::-moz-range-thumb {
@@ -343,18 +323,13 @@
             <div id="turn-indicator"></div>
             <div id="p2-score" class="score"></div>
         </div>
-
-        <div id="p1-color-picker-mobile"></div>
         
-        <div id="game-board-container">
-            <div id="game-board">
-                 <div id="p1-start-highlight" class="corner-highlight hidden"></div>
-                 <div id="p2-start-highlight" class="corner-highlight hidden"></div>
-            </div>
+        <div id="main-content">
+            <div id="p1-color-picker-mobile"></div>
+            <div id="game-board"></div>
+            <div id="p2-color-picker-mobile"></div>
         </div>
 
-        <div id="p2-color-picker-mobile"></div>
-        
         <div id="color-pickers-desktop"></div>
     </div>
 
@@ -375,12 +350,10 @@
             const densitySlider = document.getElementById('density-slider');
             const difficultyLabel = document.getElementById('difficulty-label');
 
-            // New DOM elements
+            // Picker containers for different layouts
             const desktopPickers = document.getElementById('color-pickers-desktop');
             const p1MobilePickers = document.getElementById('p1-color-picker-mobile');
             const p2MobilePickers = document.getElementById('p2-color-picker-mobile');
-            const p1StartHighlight = document.getElementById('p1-start-highlight');
-            const p2StartHighlight = document.getElementById('p2-start-highlight');
 
             let GRID_SIZE;
             let TOTAL_CELLS;
@@ -403,10 +376,7 @@
                 currentPlayer = 1;
                 playerState = { 1: { color: null, score: 0 }, 2: { color: null, score: 0 }};
                 
-                boardElement.innerHTML = ''; // Clear board but keep highlights
-                boardElement.appendChild(p1StartHighlight);
-                boardElement.appendChild(p2StartHighlight);
-
+                boardElement.innerHTML = '';
                 desktopPickers.innerHTML = '';
                 p1MobilePickers.innerHTML = '';
                 p2MobilePickers.innerHTML = '';
@@ -420,9 +390,6 @@
                 
                 renderBoard();
                 updateStatus();
-                
-                p1StartHighlight.classList.remove('hidden');
-                p2StartHighlight.classList.remove('hidden');
             }
 
             function createGridData() {
@@ -460,15 +427,18 @@
             }
 
             function createColorPickers() {
-                [desktopPickers, p1MobilePickers, p2MobilePickers].forEach(pickerContainer => {
-                    pickerContainer.innerHTML = '';
+                // An array of all picker containers
+                const allPickers = [desktopPickers, p1MobilePickers, p2MobilePickers];
+                
+                allPickers.forEach(container => {
+                    container.innerHTML = ''; // Clear previous buttons
                     COLORS.forEach(color => {
                         const button = document.createElement('button');
                         button.classList.add('color-btn');
                         button.style.backgroundColor = color;
                         button.dataset.color = color;
                         button.addEventListener('click', handleColorChoice);
-                        pickerContainer.appendChild(button);
+                        container.appendChild(button);
                     });
                 });
             }
@@ -496,6 +466,7 @@
             
             function floodFill(newColor) {
                 const cellsToProcess = [];
+                // Find all cells owned by the current player to start the fill from
                 for (let y = 0; y < GRID_SIZE; y++) {
                     for (let x = 0; x < GRID_SIZE; x++) {
                         if (grid[y][x].owner === currentPlayer) {
@@ -509,8 +480,11 @@
                 while(head < cellsToProcess.length) {
                     const {x, y} = cellsToProcess[head++];
                     const cellKey = `${x},${y}`;
+
                     if (visited.has(cellKey)) continue;
                     visited.add(cellKey);
+                    
+                    // The core of the fill: change ownership and check neighbors
                     grid[y][x].owner = currentPlayer;
 
                     const neighbors = [{dx:0, dy:1}, {dx:0, dy:-1}, {dx:1, dy:0}, {dx:-1, dy:0}];
@@ -520,6 +494,7 @@
                         if (newX >= 0 && newX < GRID_SIZE && newY >= 0 && newY < GRID_SIZE) {
                             const neighbor = grid[newY][newX];
                             if (neighbor.owner === 0 && neighbor.color === newColor) {
+                                // Capture adjacent neutral cells of the chosen color
                                 cellsToProcess.push({ x: newX, y: newY });
                             }
                         }
@@ -547,9 +522,6 @@
                 winnerText.textContent = winnerMessage;
                 finalScoreText.textContent = `Final Score: ${playerState[1].score} to ${playerState[2].score}`;
                 gameOverModal.classList.remove('hidden');
-                
-                p1StartHighlight.classList.add('hidden');
-                p2StartHighlight.classList.add('hidden');
             }
 
             function renderBoard() {
@@ -582,8 +554,11 @@
             }
 
             function updateStatus() {
+                // Update text content
                 p1ScoreElement.textContent = `P1: ${playerState[1].score}`;
                 p2ScoreElement.textContent = `P2: ${playerState[2].score}`;
+                
+                // Update score text color to match player's current territory
                 p1ScoreElement.style.color = playerState[1].color;
                 p2ScoreElement.style.color = playerState[2].color;
                 
@@ -594,11 +569,12 @@
                 const currentPlayerColor = playerState[currentPlayer].color;
                 const opponentPlayerColor = playerState[opponentPlayer].color;
                 
+                // Disable currently used colors on all pickers
                 document.querySelectorAll('.color-btn').forEach(btn => {
                     btn.disabled = (btn.dataset.color === currentPlayerColor || btn.dataset.color === opponentPlayerColor);
                 });
 
-                // Gray out inactive player's picker on mobile
+                // Gray out the inactive player's entire picker on mobile
                 if (currentPlayer === 1) {
                     p1MobilePickers.classList.remove('grayed-out');
                     p2MobilePickers.classList.add('grayed-out');
@@ -631,6 +607,7 @@
                 modal.classList.remove('hidden');
             });
 
+            // Initial UI setup on page load
             updateSliderUI();
         });
     </script>
